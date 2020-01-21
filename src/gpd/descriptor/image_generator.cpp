@@ -36,8 +36,6 @@ void ImageGenerator::createImages(
   // Prepare kd-tree for neighborhood searches in the point cloud.
   pcl::KdTreeFLANN<pcl::PointXYZRGBA> kdtree;
   kdtree.setInputCloud(cloud_cam.getCloudProcessed());
-  std::vector<int> nn_indices;
-  std::vector<float> nn_dists;
 
   // Set the radius for the neighborhood search to the largest image dimension.
   Eigen::Vector3d image_dims;
@@ -52,9 +50,11 @@ void ImageGenerator::createImages(
   double t_slice = omp_get_wtime();
 
 #ifdef _OPENMP  // parallelization using OpenMP
-#pragma omp parallel for private(nn_indices, nn_dists) num_threads(num_threads_)
+#pragma omp parallel for num_threads(num_threads_)
 #endif
   for (int i = 0; i < hand_set_list.size(); i++) {
+    std::vector<int> nn_indices;
+    std::vector<float> nn_dists;
     pcl::PointXYZRGBA sample_pcl;
     sample_pcl.getVector3fMap() = hand_set_list[i]->getSample().cast<float>();
 

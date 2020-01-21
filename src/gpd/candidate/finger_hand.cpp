@@ -140,6 +140,7 @@ int FingerHand::deepenHand(const Eigen::Matrix3Xd &points, double min_depth,
 
 std::vector<int> FingerHand::computePointsInClosingRegion(
     const Eigen::Matrix3Xd &points, int idx) {
+  std::vector<int> indices;
   // Find feasible finger placement.
   if (idx == -1) {
     for (int i = 0; i < hand_.cols(); i++) {
@@ -149,6 +150,8 @@ std::vector<int> FingerHand::computePointsInClosingRegion(
       }
     }
   }
+  if (idx == -1)
+    return indices;
 
   // Calculate the lateral parameters of the hand closing region for this finger
   // placement.
@@ -159,7 +162,6 @@ std::vector<int> FingerHand::computePointsInClosingRegion(
 
   // Find points inside the hand closing region defined by <bottom_>, <top_>,
   // <left_> and <right_>.
-  std::vector<int> indices;
   for (int i = 0; i < points.cols(); i++) {
     if (points(forward_axis_, i) > bottom_ && points(forward_axis_, i) < top_ &&
         points(lateral_axis_, i) > left_ && points(lateral_axis_, i) < right_) {

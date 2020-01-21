@@ -52,6 +52,7 @@
 #include <pcl/search/impl/kdtree.hpp>
 
 #if defined(USE_PCL_GPU)  // switch include ordering if compilation fails
+#include <pcl/gpu/containers/device_array.h>
 #include <pcl/gpu/containers/device_array.hpp>
 #include <pcl/gpu/features/features.hpp>
 #endif

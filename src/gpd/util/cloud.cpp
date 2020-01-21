@@ -545,10 +545,7 @@ void Cloud::calculateNormalsGPU() {
   pcl::gpu::Feature::Normals normals_device;
   pcl::gpu::NormalEstimation ne;
   ne.setInputCloud(cloud_device);
-  // ne.setRadiusSearch(0.03, 1000);
-  ne.setRadiusSearch(0.03, 2000);
-  // ne.setRadiusSearch(0.03, 4000);
-  // ne.setRadiusSearch(0.03, 8000);
+  ne.setRadiusSearch(0.03, 65535);
   pcl::gpu::Feature::Indices indices_device;
   std::vector<pcl::PointXYZ> downloaded;
   normals_.resize(3, camera_source_.cols());

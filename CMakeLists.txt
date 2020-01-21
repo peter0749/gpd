@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project(gpd)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Eigen library
 include_directories(${EIGEN3_INCLUDE_DIR})
@@ -13,16 +14,45 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
+# Boost
+find_package(Boost REQUIRED)
+find_package(Boost COMPONENTS thread REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS})
+add_definitions(${Boost_DEFINITIONS})
+
+## Set compiler optimization flags
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+set(CXX_COMPILE_FLAGS_M " -fopenmp -fPIC -Wno-deprecated -Wenum-compare")
+set(RELEASE_OPTI " -O2 -march=native")
+set(DEBUG_OPTI " -O0 -g")
+
+string(REPLACE "-O3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+string(REPLACE "-O3" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+string(REPLACE "-O3" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+
+string(REPLACE "-O2" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+string(REPLACE "-O2" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+string(REPLACE "-O2" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+
+string(REPLACE "-g" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+string(REPLACE "-g" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+string(REPLACE "-g" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_DEBUG} ${CXX_COMPILE_FLAGS_M} ${DEBUG_OPTI}")
+else()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_RELEASE} ${CXX_COMPILE_FLAGS_M} ${RELEASE_OPTI}")
+endif()
+
 # OpenCV
 find_package(OpenCV REQUIRED)
 #find_package(OpenCV REQUIRED PATHS /usr/local NO_DEFAULT_PATH)
 
 ## Set compiler optimization flags
-# set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC -Wno-deprecated -Wenum-compare -std=c++14")
-set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC -Wno-deprecated -Wenum-compare -Wno-ignored-attributes -std=c++14")
-# set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC -Wno-deprecated -Wenum-compare")
-# set(CMAKE_CXX_FLAGS "-O3 -fopenmp -march=native -mfpmath=sse -funroll-loops -fPIC -Wno-deprecated -Wenum-compare") # no improvement
-# set(CMAKE_CXX_FLAGS "-frename-registers -Ofast -march=native -fopenmp -fPIC -Wno-deprecated -Wenum-compare") # no improvement
+set(CMAKE_CXX_FLAGS "-O2 -march=native -fopenmp -fPIC -Wno-deprecated -Wenum-compare -Wno-ignored-attributes -std=c++14")
 
 ## Specify additional locations of header files
 include_directories(include ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
@@ -83,9 +113,13 @@ if(BUILD_DATA_GENERATION STREQUAL "ON")
   target_link_libraries(${PROJECT_NAME}_data_generator
    ${PROJECT_NAME}_grasp_detector
    ${PCL_LIBRARIES}
+   ${Boost_LIBRARIES}
+   Boost::thread
    ${OpenCV_LIBS})
   add_executable(${PROJECT_NAME}_generate_data src/generate_data.cpp)
   target_link_libraries(${PROJECT_NAME}_generate_data
+   ${Boost_LIBRARIES}
+   Boost::thread
    ${PROJECT_NAME}_data_generator)
   message("Building data generation module")
 endif()
@@ -95,6 +129,8 @@ add_library(${PROJECT_NAME}_grasp_detector SHARED src/${PROJECT_NAME}/grasp_dete
 
 add_library(${PROJECT_NAME}_classifier ${classifier_src})
 target_link_libraries(${PROJECT_NAME}_classifier
+                      ${Boost_LIBRARIES}
+                      Boost::thread
                       ${classifier_dep})
 
 add_library(${PROJECT_NAME}_clustering src/${PROJECT_NAME}/clustering.cpp)
@@ -132,6 +168,7 @@ add_library(${PROJECT_NAME}_image_generator src/${PROJECT_NAME}/descriptor/image
 add_executable(${PROJECT_NAME}_cem_detect_grasps src/cem_detect_grasps.cpp)
 add_executable(${PROJECT_NAME}_detect_grasps src/detect_grasps.cpp)
 add_executable(${PROJECT_NAME}_generate_candidates src/generate_candidates.cpp)
+add_executable(${PROJECT_NAME}_generate_candidates_reeval src/generate_candidates_reeval.cpp)
 add_executable(${PROJECT_NAME}_label_grasps src/label_grasps.cpp)
 add_executable(${PROJECT_NAME}_test_grasp_image src/tests/test_grasp_image.cpp)
 # add_executable(${PROJECT_NAME}_test_conv_layer src/tests/test_conv_layer.cpp)
@@ -140,9 +177,13 @@ add_executable(${PROJECT_NAME}_test_grasp_image src/tests/test_grasp_image.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_clustering
+   ${Boost_LIBRARIES}
+   Boost::thread
 ${PROJECT_NAME}_hand)
 
 target_link_libraries(${PROJECT_NAME}_grasp_detector
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_clustering
   ${PROJECT_NAME}_image_generator
   ${PROJECT_NAME}_classifier
@@ -153,28 +194,47 @@ target_link_libraries(${PROJECT_NAME}_grasp_detector
   ${PROJECT_NAME}_plot)
 
 target_link_libraries(${PROJECT_NAME}_generate_candidates
+   ${Boost_LIBRARIES}
+   Boost::thread
+  ${PROJECT_NAME}_config_file
+${PROJECT_NAME}_candidates_generator)
+target_link_libraries(${PROJECT_NAME}_generate_candidates_reeval
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_config_file
 ${PROJECT_NAME}_candidates_generator)
 
 # Linking for libraries
 target_link_libraries(${PROJECT_NAME}_antipodal
+   ${Boost_LIBRARIES}
+   Boost::thread
 ${PROJECT_NAME}_point_list)
 
 target_link_libraries(${PROJECT_NAME}_cloud
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_eigen_utils
   ${PCL_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_eigen_utils
+   ${Boost_LIBRARIES}
+   Boost::thread
 ${EIGEN_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_frame_estimator
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_cloud
 ${PROJECT_NAME}_local_frame)
 
 target_link_libraries(${PROJECT_NAME}_hand
+   ${Boost_LIBRARIES}
+   Boost::thread
 ${PROJECT_NAME}_finger_hand)
 
 target_link_libraries(${PROJECT_NAME}_hand_set
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_antipodal
   ${PROJECT_NAME}_config_file
   ${PROJECT_NAME}_hand
@@ -183,9 +243,13 @@ target_link_libraries(${PROJECT_NAME}_hand_set
 ${PROJECT_NAME}_point_list)
 
 target_link_libraries(${PROJECT_NAME}_hand_geometry
+   ${Boost_LIBRARIES}
+   Boost::thread
 ${PROJECT_NAME}_config_file)
 
 target_link_libraries(${PROJECT_NAME}_hand_search
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_antipodal
   ${PROJECT_NAME}_cloud
   ${PROJECT_NAME}_frame_estimator
@@ -194,20 +258,28 @@ target_link_libraries(${PROJECT_NAME}_hand_search
   ${PROJECT_NAME}_plot)
 
 target_link_libraries(${PROJECT_NAME}_plot
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_cloud
   ${PROJECT_NAME}_hand_set
   ${PROJECT_NAME}_image_geometry
 ${PROJECT_NAME}_local_frame)
 
 target_link_libraries(${PROJECT_NAME}_candidates_generator
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_config_file
   ${PROJECT_NAME}_hand_geometry
 ${PROJECT_NAME}_hand_search)
 
 target_link_libraries(${PROJECT_NAME}_point_list
+   ${Boost_LIBRARIES}
+   Boost::thread
 ${PROJECT_NAME}_eigen_utils)
 
 target_link_libraries(${PROJECT_NAME}_image_strategy
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_image_geometry
   ${PROJECT_NAME}_image_1_channels_strategy
   ${PROJECT_NAME}_image_3_channels_strategy
@@ -218,21 +290,33 @@ ${OpenCV_LIBS})
 
 
 target_link_libraries(${PROJECT_NAME}_image_1_channels_strategy
+   ${Boost_LIBRARIES}
+   Boost::thread
 ${PROJECT_NAME}_image_strategy)
 
 target_link_libraries(${PROJECT_NAME}_image_3_channels_strategy
+   ${Boost_LIBRARIES}
+   Boost::thread
 ${PROJECT_NAME}_image_strategy)
 
 target_link_libraries(${PROJECT_NAME}_image_12_channels_strategy
+   ${Boost_LIBRARIES}
+   Boost::thread
 ${PROJECT_NAME}_image_strategy)
 
 target_link_libraries(${PROJECT_NAME}_image_15_channels_strategy
+   ${Boost_LIBRARIES}
+   Boost::thread
 ${PROJECT_NAME}_image_strategy)
 
 target_link_libraries(${PROJECT_NAME}_image_geometry
+   ${Boost_LIBRARIES}
+   Boost::thread
 ${PROJECT_NAME}_config_file)
 
 target_link_libraries(${PROJECT_NAME}_image_generator
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_image_strategy
   ${PROJECT_NAME}_hand_set
   ${PROJECT_NAME}_image_strategy
@@ -240,9 +324,13 @@ target_link_libraries(${PROJECT_NAME}_image_generator
 ${PROJECT_NAME}_eigen_utils)
 
 target_link_libraries(${PROJECT_NAME}_sequential_importance_sampling
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_grasp_detector)
 
 target_link_libraries(${PROJECT_NAME}_test_grasp_image
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_image_generator
   ${PROJECT_NAME}_classifier
   ${PROJECT_NAME}_plot
@@ -250,21 +338,29 @@ target_link_libraries(${PROJECT_NAME}_test_grasp_image
 ${PCL_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_detect_grasps
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_grasp_detector
   ${PROJECT_NAME}_config_file
 ${PCL_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_label_grasps
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_grasp_detector
   ${PROJECT_NAME}_config_file
 ${PCL_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_cem_detect_grasps
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_sequential_importance_sampling
   ${PROJECT_NAME}_config_file
   ${PCL_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_image_generator
+   ${Boost_LIBRARIES}
+   Boost::thread
   ${PROJECT_NAME}_hand_set
   ${PROJECT_NAME}_image_strategy)
 
@@ -280,6 +376,9 @@ set_target_properties(${PROJECT_NAME}_detect_grasps
 
 set_target_properties(${PROJECT_NAME}_generate_candidates
   PROPERTIES OUTPUT_NAME generate_candidates PREFIX "")
+
+set_target_properties(${PROJECT_NAME}_generate_candidates_reeval
+  PROPERTIES OUTPUT_NAME generate_candidates_reeval PREFIX "")
 
 if(BUILD_DATA_GENERATION STREQUAL "ON")
   set_target_properties(${PROJECT_NAME}_generate_data

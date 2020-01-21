@@ -119,6 +119,11 @@ class HandSearch {
       std::vector<std::unique_ptr<candidate::Hand>> &grasps,
       bool plot_samples = false) const;
 
+  std::vector<int> reevaluateHypothesesMC(
+      const util::Cloud &cloud_cam,
+      std::vector<std::unique_ptr<candidate::Hand>> &grasps,
+      bool plot_samples = false) const;
+
   /**
    * \brief Return the parameters for the hand search.
    * \return params the hand search parameters
