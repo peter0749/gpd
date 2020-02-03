@@ -755,12 +755,13 @@ PCLVisualizer Plot::createViewer(std::string title) {
   viewer->setPosition(0, 0);
   viewer->setSize(640, 480);
   viewer->setBackgroundColor(1.0, 1.0, 1.0);
-  viewer->registerKeyboardCallback(&Plot::keyboardEventOccurred, *this,
-                                   (void *)viewer.get());
+  //viewer->registerKeyboardCallback(&Plot::keyboardEventOccurred, *this,
+  //                                 (void *)viewer.get());
 
   return viewer;
 }
 
+/*
 void Plot::keyboardEventOccurred(const pcl::visualization::KeyboardEvent &event,
                                  void *viewer_void) {
   pcl::visualization::PCLVisualizer *viewer =
@@ -773,6 +774,7 @@ void Plot::keyboardEventOccurred(const pcl::visualization::KeyboardEvent &event,
     }
   }
 }
+*/
 
 void Plot::plotCloud(const PointCloudRGBA::Ptr &cloud_rgb,
                      const std::string &title) {

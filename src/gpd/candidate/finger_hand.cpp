@@ -26,6 +26,7 @@ FingerHand::FingerHand(double finger_width, double hand_outer_diameter,
 void FingerHand::evaluateFingers(const Eigen::Matrix3Xd &points, double bite,
                                  int idx) {
   // Calculate top and bottom of the hand (top = fingertip, bottom = base).
+  const double min_dist_to_bottom = 0.005; // FIXME: To avoid gripper getting through points. This is a workaround.
   top_ = bite;
   bottom_ = bite - hand_depth_;
 
@@ -40,7 +41,7 @@ void FingerHand::evaluateFingers(const Eigen::Matrix3Xd &points, double bite,
       // Check that the hand would be able to extend by <bite> onto the object
       // without causing the back of the hand to
       // collide with <points>.
-      if (points(forward_axis_, i) < bottom_) {
+      if (points(forward_axis_, i) < bottom_ + min_dist_to_bottom) {
         return;
       }
 

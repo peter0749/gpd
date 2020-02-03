@@ -320,8 +320,10 @@ class Plot {
    */
   PCLVisualizer createViewer(std::string title);
 
+  /*
   void keyboardEventOccurred(const pcl::visualization::KeyboardEvent &event,
                              void *viewer_void);
+  */
 
   int num_orientations_;
   int num_axes_;
